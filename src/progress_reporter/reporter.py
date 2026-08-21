@@ -77,13 +77,12 @@ class ProgressReporter(ABC):
 			session_id=next(self._session_ids),
 			iterable=iterable,
 			total=total,
-			data=data,
 			start_callback=self.on_start,
 			update_callback=self.on_update,
 			close_callback=self.on_close,
+			**data,
 		)
 		
-		session.start()
 		return session
 	
 	@abstractmethod
@@ -119,10 +118,10 @@ class ProgressSession:
 			session_id: int,
 			iterable: Iterable[Any] | None,
 			total: int | None,
-			data: Mapping[str, Any],
 			start_callback: ProgressEventHandler,
 			update_callback: ProgressEventHandler,
 			close_callback: ProgressEventHandler,
+			**start_data: Any,
 	) -> None:
 		"""ProgressSession のインスタンスを初期化する。
 
@@ -130,15 +129,14 @@ class ProgressSession:
 			session_id: セッションID。
 			iterable: 反復対象のオブジェクト。
 			total: 総ステップ数。
-			data: 付加データ。
 			start_callback: セッション開始時のコールバック関数。
 			update_callback: セッション更新時のコールバック関数。
 			close_callback: セッション終了時のコールバック関数。
+			**start_data: 開始イベントに付与する情報。
 		"""
 		self._session_id = session_id
 		self._iterable = iterable
 		self._total = total
-		self._data = dict(data)
 		self.start_callback = start_callback
 		self.update_callback = update_callback
 		self.close_callback = close_callback
@@ -147,8 +145,10 @@ class ProgressSession:
 		self._started = False
 		self._closed = False
 		
-		# 外部からの非同期な進捗更新を安全に処理するためのロック
+		# 外部からの非同期な進捗更新を安全に処理するための排他制御
 		self._lock = threading.Lock()
+		
+		self.start(**start_data)
 	
 	@property
 	def session_id(self) -> int:
@@ -167,14 +167,12 @@ class ProgressSession:
 		with self._lock:
 			return self._total
 	
-	@property
-	def data(self) -> Mapping[str, Any]:
-		"""セッションに設定されたデータを取得する。"""
-		with self._lock:
-			return dict(self._data)
-	
-	def start(self) -> None:
-		"""セッションを開始する。"""
+	def start(self, **data: Any) -> None:
+		"""セッションを開始する。
+
+		Args:
+			**data: 開始イベントに付与する情報。
+		"""
 		with self._lock:
 			if self._started:
 				return
@@ -182,14 +180,13 @@ class ProgressSession:
 			self._started = True
 			current_val = self._current
 			total_val = self._total
-			data_snapshot = dict(self._data)
 		
 		self.start_callback(
 			ProgressEvent(
 				session_id=self._session_id,
 				current=current_val,
 				total=total_val,
-				data=data_snapshot,
+				data=data,
 			)
 		)
 	
@@ -205,7 +202,7 @@ class ProgressSession:
 		Args:
 			n: 増分ステップ数。
 			total: 変更後の総ステップ数。
-			**data: 追加・更新する付加情報。
+			**data: この更新イベントに付与する情報。
 
 		Raises:
 			ValueError: nが負の値の場合。
@@ -221,7 +218,6 @@ class ProgressSession:
 				self._total = total
 			
 			self._current += n
-			self._data.update(data)
 			
 			current_val = self._current
 			total_val = self._total
@@ -232,12 +228,16 @@ class ProgressSession:
 				current=current_val,
 				n=n,
 				total=total_val,
-				data=dict(data),
+				data=data,
 			)
 		)
 	
-	def close(self) -> None:
-		"""セッションを終了する。"""
+	def close(self, **data: Any) -> None:
+		"""セッションを終了する。
+
+		Args:
+			**data: 終了イベントに付加する情報。
+		"""
 		with self._lock:
 			if self._closed:
 				return
@@ -245,14 +245,13 @@ class ProgressSession:
 			self._closed = True
 			current_val = self._current
 			total_val = self._total
-			data_snapshot = dict(self._data)
 		
 		self.close_callback(
 			ProgressEvent(
 				session_id=self._session_id,
 				current=current_val,
 				total=total_val,
-				data=data_snapshot,
+				data=data,
 			)
 		)
 	
