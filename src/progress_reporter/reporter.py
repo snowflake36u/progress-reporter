@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from itertools import count
@@ -145,6 +146,9 @@ class ProgressSession:
 		self._current = 0
 		self._started = False
 		self._closed = False
+		
+		# 外部からの非同期な進捗更新を安全に処理するためのロック
+		self._lock = threading.Lock()
 	
 	@property
 	def session_id(self) -> int:
@@ -154,31 +158,38 @@ class ProgressSession:
 	@property
 	def current(self) -> int:
 		"""現在の進捗値を取得する。"""
-		return self._current
+		with self._lock:
+			return self._current
 	
 	@property
 	def total(self) -> int | None:
 		"""総ステップ数を取得する。"""
-		return self._total
+		with self._lock:
+			return self._total
 	
 	@property
 	def data(self) -> Mapping[str, Any]:
 		"""セッションに設定されたデータを取得する。"""
-		return self._data
+		with self._lock:
+			return dict(self._data)
 	
 	def start(self) -> None:
 		"""セッションを開始する。"""
-		if self._started:
-			return
-		
-		self._started = True
+		with self._lock:
+			if self._started:
+				return
+			
+			self._started = True
+			current_val = self._current
+			total_val = self._total
+			data_snapshot = dict(self._data)
 		
 		self.start_callback(
 			ProgressEvent(
 				session_id=self._session_id,
-				current=self._current,
-				total=self._total,
-				data=dict(self._data),
+				current=current_val,
+				total=total_val,
+				data=data_snapshot,
 			)
 		)
 	
@@ -200,40 +211,48 @@ class ProgressSession:
 			ValueError: nが負の値の場合。
 			RuntimeError: セッションが未開始またはすでに終了している場合。
 		"""
-		self._ensure_active()
-		
-		if n < 0:
-			raise ValueError("n must be 0 or greater.")
-		
-		if total is not None:
-			self._total = total
-		
-		self._current += n
-		self._data.update(data)
+		with self._lock:
+			self._ensure_active()
+			
+			if n < 0:
+				raise ValueError("n must be 0 or greater.")
+			
+			if total is not None:
+				self._total = total
+			
+			self._current += n
+			self._data.update(data)
+			
+			current_val = self._current
+			total_val = self._total
 		
 		self.update_callback(
 			ProgressEvent(
 				session_id=self._session_id,
-				current=self._current,
+				current=current_val,
 				n=n,
-				total=self._total,
+				total=total_val,
 				data=dict(data),
 			)
 		)
 	
 	def close(self) -> None:
 		"""セッションを終了する。"""
-		if self._closed:
-			return
-		
-		self._closed = True
+		with self._lock:
+			if self._closed:
+				return
+			
+			self._closed = True
+			current_val = self._current
+			total_val = self._total
+			data_snapshot = dict(self._data)
 		
 		self.close_callback(
 			ProgressEvent(
 				session_id=self._session_id,
-				current=self._current,
-				total=self._total,
-				data=dict(self._data),
+				current=current_val,
+				total=total_val,
+				data=data_snapshot,
 			)
 		)
 	
@@ -246,7 +265,8 @@ class ProgressSession:
 		Raises:
 			RuntimeError: セッションが未開始またはすでに終了している場合。
 		"""
-		self._ensure_active()
+		with self._lock:
+			self._ensure_active()
 		return self
 	
 	def __exit__(
@@ -271,7 +291,8 @@ class ProgressSession:
 		if self._iterable is None:
 			raise TypeError("This progress session has no iterable.")
 		
-		self._ensure_active()
+		with self._lock:
+			self._ensure_active()
 		
 		try:
 			for item in self._iterable:
@@ -282,6 +303,8 @@ class ProgressSession:
 	
 	def _ensure_active(self) -> None:
 		"""セッションがアクティブ状態であることを確認する。
+		
+		呼び出し元で排他制御が行われていることを前提とする。
 
 		Raises:
 			RuntimeError: セッションが未開始またはすでに終了している場合。
@@ -303,6 +326,9 @@ class TqdmProgressReporter(ProgressReporter):
 		"""
 		super().__init__(**config)
 		self._bars: dict[int, tqdm] = { }
+		
+		# 複数のプログレスバー操作が競合しないように保護する
+		self._lock = threading.Lock()
 	
 	def on_start(self, event: ProgressEvent) -> None:
 		"""tqdm プログレスバーを生成して保持する。
@@ -310,10 +336,11 @@ class TqdmProgressReporter(ProgressReporter):
 		Args:
 			event: 発行された進捗イベント。
 		"""
-		self._bars[event.session_id] = tqdm(
-			total=event.total,
-			**self._config,
-		)
+		with self._lock:
+			self._bars[event.session_id] = tqdm(
+				total=event.total,
+				**self._config,
+			)
 	
 	def on_update(self, event: ProgressEvent) -> None:
 		"""tqdm プログレスバーの表示を更新する。
@@ -321,15 +348,18 @@ class TqdmProgressReporter(ProgressReporter):
 		Args:
 			event: 発行された進捗イベント。
 		"""
-		bar = self._bars[event.session_id]
-		
-		if bar.total != event.total:
-			bar.total = event.total
-		
-		if event.n:
-			bar.update(event.n)
-		else:
-			bar.refresh()
+		with self._lock:
+			bar = self._bars.get(event.session_id)
+			if bar is None:
+				return
+			
+			if bar.total != event.total:
+				bar.total = event.total
+			
+			if event.n:
+				bar.update(event.n)
+			else:
+				bar.refresh()
 	
 	def on_close(self, event: ProgressEvent) -> None:
 		"""tqdm プログレスバーを閉じる。
@@ -337,8 +367,10 @@ class TqdmProgressReporter(ProgressReporter):
 		Args:
 			event: 発行された進捗イベント。
 		"""
-		bar = self._bars.pop(event.session_id)
-		bar.close()
+		with self._lock:
+			bar = self._bars.pop(event.session_id, None)
+			if bar is not None:
+				bar.close()
 
 class NullProgressReporter(ProgressReporter):
 	"""進捗イベントとして何も処理しない実装。"""
