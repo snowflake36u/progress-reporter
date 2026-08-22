@@ -19,7 +19,7 @@ class TqdmProgressReporter(ProgressReporter):
 			**config: tqdm に引き渡す標準オプション。
 		"""
 		super().__init__(**config)
-		self._bars: dict[int, tqdm] = { }
+		self._pbars: dict[int, tqdm] = { }
 		
 		# 複数のプログレスバー操作が競合しないように保護する
 		self._lock = threading.Lock()
@@ -31,7 +31,7 @@ class TqdmProgressReporter(ProgressReporter):
 			event: 発行された進捗イベント。
 		"""
 		with self._lock:
-			self._bars[event.session_id] = tqdm(
+			self._pbars[event.session_id] = tqdm(
 				total=event.total,
 				**self._config,
 			)
@@ -43,7 +43,7 @@ class TqdmProgressReporter(ProgressReporter):
 			event: 発行された進捗イベント。
 		"""
 		with self._lock:
-			bar = self._bars.get(event.session_id)
+			bar = self.pbar(event.session_id)
 			if bar is None:
 				return
 			
@@ -62,6 +62,13 @@ class TqdmProgressReporter(ProgressReporter):
 			event: 発行された進捗イベント。
 		"""
 		with self._lock:
-			bar = self._bars.pop(event.session_id, None)
+			bar = self._pbars.pop(event.session_id, None)
 			if bar is not None:
 				bar.close()
+	
+	def pbar(self, event: ProgressEvent) -> tqdm:
+		return self._pbars.get(event.session_id)
+
+__all__ = [
+	"TqdmProgressReporter",
+]
