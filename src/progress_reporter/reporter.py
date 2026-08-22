@@ -8,15 +8,12 @@ from dataclasses import dataclass, field
 from itertools import count
 from typing import Any, Callable, Iterable, Iterator, Mapping
 
-from tqdm import tqdm
-
 __all__ = [
 	'NullProgressReporter',
 	'ProgressEvent',
 	'ProgressEventHandler',
 	'ProgressReporter',
 	'ProgressSession',
-	'TqdmProgressReporter',
 ]
 
 @dataclass(frozen=True, slots=True)
@@ -313,63 +310,6 @@ class ProgressSession:
 		
 		if self._closed:
 			raise RuntimeError("Progress session is already closed.")
-
-class TqdmProgressReporter(ProgressReporter):
-	"""tqdmを利用して進捗を表示するReporter。"""
-	
-	def __init__(self, **config: Any) -> None:
-		"""TqdmProgressReporter のインスタンスを初期化する。
-
-		Args:
-			**config: tqdm に引き渡す標準オプション。
-		"""
-		super().__init__(**config)
-		self._bars: dict[int, tqdm] = { }
-		
-		# 複数のプログレスバー操作が競合しないように保護する
-		self._lock = threading.Lock()
-	
-	def on_start(self, event: ProgressEvent) -> None:
-		"""tqdm プログレスバーを生成して保持する。
-
-		Args:
-			event: 発行された進捗イベント。
-		"""
-		with self._lock:
-			self._bars[event.session_id] = tqdm(
-				total=event.total,
-				**self._config,
-			)
-	
-	def on_update(self, event: ProgressEvent) -> None:
-		"""tqdm プログレスバーの表示を更新する。
-
-		Args:
-			event: 発行された進捗イベント。
-		"""
-		with self._lock:
-			bar = self._bars.get(event.session_id)
-			if bar is None:
-				return
-			
-			if bar.total != event.total:
-				bar.total = event.total
-			
-			if event.n:
-				bar.update(event.n)
-			else:
-				bar.refresh()
-	
-	def on_close(self, event: ProgressEvent) -> None:
-		"""tqdm プログレスバーを閉じる。
-
-		Args:
-			event: 発行された進捗イベント。
-		"""
-		with self._lock:
-			bar = self._bars.pop(event.session_id, None)
-			if bar is not None:
-				bar.close()
 
 class NullProgressReporter(ProgressReporter):
 	"""進捗イベントとして何も処理しない実装。"""

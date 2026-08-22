@@ -112,3 +112,7 @@ class IntervalScheduler:
 			累積ステップ数。
 		"""
 		return self._steps
+
+__all__ = [
+	"IntervalScheduler",
+]
