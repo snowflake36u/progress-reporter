@@ -1,23 +1,27 @@
-# 認証ファイル（リポジトリに含めない）
+# Secrets and local credentials
 credentials.json
 token.json
+.env
 
-# 出力ファイル
+# Output and generated files
 *.tsv
 *.csv
+dist/
+build/
+*.egg-info/
+.pytest_cache/
 
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-*.egg-info/
 .Python
 venv/
 env/
 ENV/
 
-# IDE
+# IDE and editor files
 .idea/
 .vscode/
 *.swp
@@ -27,7 +31,3 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# ローカル設定
-.env
-
-sandbox/
