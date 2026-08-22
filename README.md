@@ -15,7 +15,7 @@ A typical pattern is to integrate a progress bar directly into the task loop. Fo
 - `ProgressSession` tracks the state of a single progress lifecycle
 - `ProgressReporter` defines how events are handled
 - concrete reporters such as `TqdmProgressReporter` render progress in a terminal
-- `IntervalScheduler` helps suppress excessively frequent update events
+- `IntervalTrigger` helps suppress excessively frequent update events
 
 ## Features
 
@@ -24,7 +24,7 @@ A typical pattern is to integrate a progress bar directly into the task loop. Fo
 - Support for custom reporters by subclassing `ProgressReporter`
 - `NullProgressReporter` for no-op behavior in tests or non-interactive environments
 - `TqdmProgressReporter` for terminal progress bars
-- `IntervalScheduler` for throttling updates by step count or elapsed time
+- `IntervalTrigger` for throttling updates by step count or elapsed time
 
 ## Requirements
 
@@ -115,9 +115,9 @@ progress.close()
 
 This is the core philosophy of the library: task logic emits progress events, while the reporter decides how to expose them.
 
-## IntervalScheduler
+## IntervalTrigger
 
-`IntervalScheduler` is a utility for reducing the frequency of progress events when work produces updates too often to be useful.
+`IntervalTrigger` is a utility for reducing the frequency of progress events when work produces updates too often to be useful.
 
 It can trigger updates based on either:
 
@@ -127,30 +127,30 @@ It can trigger updates based on either:
 When both are set, the first condition to become true wins.
 
 ```python
-from progress_reporter.scheduler import IntervalScheduler
+from progress_reporter.trigger import IntervalTrigger
 
-scheduler = IntervalScheduler(step_interval=10)
+trigger = IntervalTrigger(step_interval=10)
 
 for step in range(25):
-    if scheduler.add():
-        print(f"Update triggered at step {scheduler.steps}")
+    if trigger.step():
+        print(f"Update triggered at step {trigger.steps}")
 ```
 
 Time-based scheduling is also supported:
 
 ```python
-from progress_reporter.scheduler import IntervalScheduler
+from progress_reporter.trigger import IntervalTrigger
 
-scheduler = IntervalScheduler(time_interval=0.5)
+trigger = IntervalTrigger(time_interval=0.5)
 
 for _ in range(10):
-    if scheduler.add():
+    if trigger.step():
         print("time-based update fired")
 ```
 
 This is especially helpful in situations where a task emits many small progress notifications, but only a subset of them need to reach a UI layer such as a progress bar or log sink.
 
- For iteration-based progress updates with `tqdm`, the built-in `miniters` and `mininterval` options are often sufficient, so `IntervalScheduler` is usually not needed there. It becomes useful when progress is updated at times other than the main iteration loop, such as processing sub-tasks or external events that need throttling.
+ For iteration-based progress updates with `tqdm`, the built-in `miniters` and `mininterval` options are often sufficient, so `IntervalTrigger` is usually not needed there. It becomes useful when progress is updated at times other than the main iteration loop, such as processing sub-tasks or external events that need throttling.
 
 ## License
 

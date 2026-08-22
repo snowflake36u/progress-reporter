@@ -1,7 +1,7 @@
 import time
 from typing import Callable
 
-class IntervalScheduler:
+class IntervalTrigger:
 	"""ステップ数または時間間隔に基づいて更新タイミングを判定するクラス。
 
 	指定されたステップ数または時間間隔のいずれかが条件を満たしたタイミングで
@@ -19,7 +19,7 @@ class IntervalScheduler:
 			*,
 			clock: Callable[[], float] = time.monotonic,
 	) -> None:
-		"""IntervalScheduler のインスタンスを初期化します。
+		"""IntervalTrigger のインスタンスを初期化します。
 
 		Args:
 			step_interval: 更新判定を行うステップ数。
@@ -45,14 +45,14 @@ class IntervalScheduler:
 		self._last_update = 0.0
 		self.reset()
 	
-	def add(self, steps: int = 1) -> bool:
+	def step(self, n: int = 1) -> bool:
 		"""指定ステップ数を加算し、更新タイミングに達したかを判定します。
 
 		ステップ間隔と時間間隔の両方を指定した場合は、どちらか一方が
 		先に条件を満たした時点で True になります。
 
 		Args:
-			steps: 加算するステップ数。
+			n: 加算するステップ数。
 
 		Returns:
 			更新タイミングに達した場合は True、それ以外は False。
@@ -60,24 +60,24 @@ class IntervalScheduler:
 		Raises:
 			ValueError: steps に負の数が指定された場合。
 		"""
-		if steps < 0:
+		if n < 0:
 			raise ValueError("steps must be 0 or greater.")
 		
-		self._steps += steps
+		self._steps += n
 		
 		if self._next_update_steps is not None and self._steps >= self._next_update_steps:
-			self.update()
+			self.mark_triggered()
 			return True
 		
 		if self.time_interval is not None:
 			now = self._clock()
 			if now - self._last_update >= self.time_interval:
-				self.update(now=now)
+				self.mark_triggered(now=now)
 				return True
 		
 		return False
 	
-	def update(self, *, now: float | None = None) -> None:
+	def mark_triggered(self, *, now: float | None = None) -> None:
 		"""次の更新判定に向けて状態を更新します。
 
 		累積ステップ数は維持されるため、累積値を表示する用途にも使用できます。
@@ -114,5 +114,5 @@ class IntervalScheduler:
 		return self._steps
 
 __all__ = [
-	"IntervalScheduler",
+	"IntervalTrigger",
 ]
