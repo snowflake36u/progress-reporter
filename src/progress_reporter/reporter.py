@@ -38,13 +38,9 @@ ProgressEventHandler = Callable[[ProgressEvent], None]
 class ProgressReporter(ABC):
 	"""進捗イベントの通知方法を定義する基底クラス。"""
 	
-	def __init__(self, **config: Any) -> None:
+	def __init__(self: Any) -> None:
 		"""ProgressReporter のインスタンスを初期化する。
-
-		Args:
-			**config: レポーターの設定オプション。
 		"""
-		self._config = dict(config)
 		self._session_ids = count(1)
 	
 	def watch(

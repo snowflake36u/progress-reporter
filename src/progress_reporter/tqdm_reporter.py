@@ -18,7 +18,8 @@ class TqdmProgressReporter(ProgressReporter):
 		Args:
 			**config: tqdm に引き渡す標準オプション。
 		"""
-		super().__init__(**config)
+		super().__init__()
+		self._config = config
 		self._pbars: dict[int, tqdm] = { }
 		
 		# 複数のプログレスバー操作が競合しないように保護する
