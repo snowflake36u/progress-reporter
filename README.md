@@ -14,7 +14,7 @@ A typical pattern is to integrate a progress bar directly into the task loop. Fo
 
 - `ProgressSession` tracks the state of a single progress lifecycle
 - `ProgressReporter` defines how events are handled
-- concrete reporters such as `TqdmProgressReporter` render progress in a terminal
+- concrete reporters such as `TqdmProgressReporter` and `NestedTqdmProgressReporter` render progress in a terminal
 - `IntervalTrigger` helps suppress excessively frequent update events
 
 ## Features
@@ -24,6 +24,7 @@ A typical pattern is to integrate a progress bar directly into the task loop. Fo
 - Support for custom reporters by subclassing `ProgressReporter`
 - `NullProgressReporter` for no-op behavior in tests or non-interactive environments
 - `TqdmProgressReporter` for terminal progress bars
+- `NestedTqdmProgressReporter` for nested terminal progress bars
 - `IntervalTrigger` for throttling updates by step count or elapsed time
 
 ## Requirements
@@ -43,7 +44,7 @@ python -m pip install -U pip
 python -m pip install -e .
 ```
 
-## Quick start (support for tqdm)
+## Quick start for handling tqdm
 
 ```python
 from progress_reporter.tqdm_reporter import TqdmProgressReporter
@@ -79,6 +80,23 @@ The session supports:
 - iteration-based updates when an iterable has been specified to `reporter.watch()`
 
 If no iterable is specified to `reporter.watch()`, only the manual session management is available.
+
+## Nested tqdm bars
+
+When a task has nested loops or multiple concurrent progress scopes, use `NestedTqdmProgressReporter` to render them as stacked tqdm bars.
+
+```python
+from progress_reporter.tqdm_reporter import NestedTqdmProgressReporter
+
+reporter = NestedTqdmProgressReporter(desc="Processing batches")
+
+for batch in reporter.watch(range(2)):
+    for item in reporter.watch(range(3)):
+        # do the real work here
+        ...
+```
+
+Each session is assigned its own tqdm position in start order, so the nested bars remain aligned without interfering with one another.
 
 ## Custom reporter example
 
