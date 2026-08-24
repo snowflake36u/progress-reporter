@@ -43,7 +43,7 @@ class TqdmProgressReporter(ProgressReporter):
 			event: 発行された進捗イベント。
 		"""
 		with self._lock:
-			bar = self.pbar(event.session_id)
+			bar = self.pbar(event)
 			if bar is None:
 				return
 			
