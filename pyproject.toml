@@ -63,4 +63,3 @@ branch = "main"                             # 対象ブランチ
 build_command = ""
 allow_zero_version = true
 major_on_zero = false
-push = false
