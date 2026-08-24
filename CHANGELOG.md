@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.2.2 (2026-08-25)
+
+### Bug Fixes
+
+- **trigger**: Replace Lock with RLock for thread-safe progress updates
+  ([`b6f9a5d`](https://github.com/snowflake36u/progress-reporter/commit/b6f9a5d0770f41b6678c327de4e42c800e9b20bd))
+
+
 ## v0.2.1 (2026-08-24)
 
 ### Chores
