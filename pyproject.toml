@@ -51,3 +51,16 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.semantic_release]
+version_variables = [
+	"src/progress_reporter/__init__.py:__version__", # __main__.py内のバージョン変数を更新
+]
+version_toml = [
+	"pyproject.toml:project.version", # pyproject.toml内のバージョンを更新
+]
+branch = "main"                             # 対象ブランチ
+build_command = ""
+allow_zero_version = true
+major_on_zero = false
+push = false
