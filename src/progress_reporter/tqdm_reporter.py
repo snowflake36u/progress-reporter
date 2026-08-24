@@ -26,7 +26,7 @@ class TqdmProgressReporter(ProgressReporter):
 		super().__init__()
 		self._config = config
 		self._pbar: tqdm | None = None
-		self._lock = threading.Lock()
+		self._lock = threading.RLock()
 	
 	def on_start(self, event: ProgressEvent) -> None:
 		"""進捗バーを生成する。
@@ -101,7 +101,7 @@ class NestedTqdmProgressReporter(ProgressReporter):
 		self._config = config
 		self._pbars: dict[int, tqdm] = { }
 		self._levels: dict[int, int] = { }
-		self._lock = threading.Lock()
+		self._lock = threading.RLock()
 	
 	def on_start(self, event: ProgressEvent) -> None:
 		"""新しい tqdm プログレスバーを生成する。"""
