@@ -1,3 +1,4 @@
+import threading
 import time
 from typing import Callable
 
@@ -40,6 +41,7 @@ class IntervalTrigger:
 		self.step_interval = step_interval
 		self.time_interval = time_interval
 		self._clock = clock
+		self._lock = threading.RLock()
 		self._steps = 0
 		self._next_update_steps: int | None = None
 		self._last_update = 0.0
@@ -47,71 +49,75 @@ class IntervalTrigger:
 	
 	def step(self, n: int = 1) -> bool:
 		"""指定ステップ数を加算し、更新タイミングに達したかを判定します。
-
+		
 		ステップ間隔と時間間隔の両方を指定した場合は、どちらか一方が
 		先に条件を満たした時点で True になります。
-
+		
 		Args:
 			n: 加算するステップ数。
-
+		
 		Returns:
 			更新タイミングに達した場合は True、それ以外は False。
-
+		
 		Raises:
 			ValueError: steps に負の数が指定された場合。
 		"""
-		if n < 0:
-			raise ValueError("steps must be 0 or greater.")
-		
-		self._steps += n
-		
-		if self._next_update_steps is not None and self._steps >= self._next_update_steps:
-			self.mark_triggered()
-			return True
-		
-		if self.time_interval is not None:
-			now = self._clock()
-			if now - self._last_update >= self.time_interval:
-				self.mark_triggered(now=now)
+		with self._lock:
+			if n < 0:
+				raise ValueError("steps must be 0 or greater.")
+			
+			self._steps += n
+			
+			if self._next_update_steps is not None and self._steps >= self._next_update_steps:
+				self.mark_triggered()
 				return True
-		
-		return False
+			
+			if self.time_interval is not None:
+				now = self._clock()
+				if now - self._last_update >= self.time_interval:
+					self.mark_triggered(now=now)
+					return True
+			
+			return False
 	
 	def mark_triggered(self, *, now: float | None = None) -> None:
 		"""次の更新判定に向けて状態を更新します。
-
+		
 		累積ステップ数は維持されるため、累積値を表示する用途にも使用できます。
-
+		
 		Args:
 			now: リセット基準となる現在時刻。指定しない場合は clock から取得します。
 		"""
-		self._last_update = self._clock() if now is None else now
-		
-		if self.step_interval is None:
-			self._next_update_steps = None
-			return
-		
-		self._next_update_steps = \
-			(self._steps // self.step_interval + 1) * self.step_interval
+		with self._lock:
+			self._last_update = self._clock() if now is None else now
+			
+			if self.step_interval is None:
+				self._next_update_steps = None
+				return
+			
+			self._next_update_steps = \
+				(self._steps // self.step_interval + 1) * self.step_interval
 	
 	def reset(self, *, now: float | None = None) -> None:
 		"""内部状態を完全に初期化します。
-
+		
 		Args:
 			now: 初期化基準となる現在時刻。指定しない場合は clock から取得します。
 		"""
-		self._steps = 0
-		self._last_update = self._clock() if now is None else now
-		self._next_update_steps = self.step_interval
+		with self._lock:
+			self._steps = 0
+			self._last_update = self._clock() if now is None else now
+			self._next_update_steps = self.step_interval
 	
 	@property
 	def steps(self) -> int:
 		"""現在までに加算された累積ステップ数を取得します。
-
+		
 		Returns:
 			累積ステップ数。
 		"""
-		return self._steps
+		with self._lock:
+			return self._steps
 
 __all__ = [
 	"IntervalTrigger",

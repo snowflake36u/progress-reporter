@@ -138,8 +138,10 @@ class ProgressSession:
 		self._started = False
 		self._closed = False
 		
-		# 外部からの非同期な進捗更新を安全に処理するための排他制御
-		self._lock = threading.Lock()
+		# コールバックやプロパティ取得が同一セッションの状態へ再入することが
+		# あるため、通常の Lock では再入時にデッドロックする可能性がある。
+		# 状態の更新と参照を安全に保つには、再入可能なロックが適切。
+		self._lock = threading.RLock()
 		
 		self.start(**start_data)
 	
