@@ -7,7 +7,7 @@ from typing import Any
 
 from tqdm import tqdm
 
-from progress_reporter import ProgressEvent, ProgressReporter
+from . import ProgressReporter, ProgressEvent
 
 class TqdmProgressReporter(ProgressReporter):
 	"""単一の tqdm プログレスバーを表示する Reporter。

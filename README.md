@@ -1,6 +1,6 @@
-# progress-reporter
+# progress-reporters
 
-`progress-reporter` is a lightweight Python library for monitoring long-running tasks while keeping task execution logic separate from presentation and notification logic.
+`progress-reporters` is a lightweight Python library for monitoring long-running tasks while keeping task execution logic separate from presentation and notification logic.
 
 In applications implementations, the code that performs work can be mixed with UI concerns such as progress bars, logging, or status updates. This library introduces a small event-driven model: the task emits progress events, and a reporter decides how those events are displayed or processed.
 
@@ -10,7 +10,7 @@ This makes it easier to keep business logic clean while still supporting progres
 
 A typical pattern is to integrate a progress bar directly into the task loop. For example, calling `tqdm` updates inside the processing code couples the implementation of the work with the formatting of the display.
 
-`progress-reporter` separates these concerns:
+`progress-reporters` separates these concerns:
 
 - `ProgressSession` tracks the state of a single progress lifecycle
 - `ProgressReporter` defines how events are handled
@@ -29,12 +29,12 @@ A typical pattern is to integrate a progress bar directly into the task loop. Fo
 
 ## Requirements
 
-- tqdm (Optional, to use `progress_reporter.tqdm_reporter` module)
+- tqdm (Optional, to use `progress_reporters.tqdm_reporter` module)
 
 ## Installation
 
 ```bash
-pip install progress-reporter
+pip install progress-reporters
 ```
 
 For local development:
@@ -47,7 +47,7 @@ python -m pip install -e .
 ## Quick start for handling tqdm
 
 ```python
-from progress_reporter.tqdm_reporter import TqdmProgressReporter
+from progress_reporters.tqdm_reporter import TqdmProgressReporter
 
 # Arguments will be passed to tqdm() internally
 reporter = TqdmProgressReporter(desc="Processing items")
@@ -86,7 +86,7 @@ If no iterable is specified to `reporter.watch()`, only the manual session manag
 When a task has nested loops or multiple concurrent progress scopes, use `NestedTqdmProgressReporter` to render them as stacked tqdm bars.
 
 ```python
-from progress_reporter.tqdm_reporter import NestedTqdmProgressReporter
+from progress_reporters.tqdm_reporter import NestedTqdmProgressReporter
 
 reporter = NestedTqdmProgressReporter(desc="Processing batches")
 
@@ -101,7 +101,7 @@ Each session is assigned its own tqdm position in start order, so the nested bar
 ## Custom reporter example
 
 ```python
-from progress_reporter import ProgressEvent, ProgressReporter
+from progress_reporters import ProgressEvent, ProgressReporter
 
 class LoggingReporter(ProgressReporter):
     def on_start(self, event: ProgressEvent) -> None:
@@ -145,7 +145,7 @@ It can trigger updates based on either:
 When both are set, the first condition to become true wins.
 
 ```python
-from progress_reporter.trigger import IntervalTrigger
+from progress_reporters.trigger import IntervalTrigger
 
 trigger = IntervalTrigger(step_interval=10)
 
@@ -157,7 +157,7 @@ for step in range(25):
 Time-based scheduling is also supported:
 
 ```python
-from progress_reporter.trigger import IntervalTrigger
+from progress_reporters.trigger import IntervalTrigger
 
 trigger = IntervalTrigger(time_interval=0.5)
 

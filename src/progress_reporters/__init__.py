@@ -1,4 +1,4 @@
-"""Public package interface for progress_reporter."""
+"""Public package interface for progress_reporters."""
 
 from .reporter import (
 	NullProgressReporter,

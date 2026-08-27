@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "progress-reporter"
+name = "progress-reporters"
 version = "0.2.2"
 description = ""
 readme = "README.md"
@@ -38,10 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/snowflake36u/progress-reporter"
-Repository = "https://github.com/snowflake36u/progress-reporter"
-Issues = "https://github.com/snowflake36u/progress-reporter/issues"
-Documentation = "https://github.com/snowflake36u/progress-reporter#readme"
+Homepage = "https://github.com/snowflake36u/progress-reporters"
+Repository = "https://github.com/snowflake36u/progress-reporters"
+Issues = "https://github.com/snowflake36u/progress-reporters/issues"
+Documentation = "https://github.com/snowflake36u/progress-reporters#readme"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -54,7 +54,7 @@ testpaths = ["tests"]
 
 [tool.semantic_release]
 version_variables = [
-	"src/progress_reporter/__init__.py:__version__", # __main__.py内のバージョン変数を更新
+	"src/progress_reporters/__init__.py:__version__", # __main__.py内のバージョン変数を更新
 ]
 version_toml = [
 	"pyproject.toml:project.version", # pyproject.toml内のバージョンを更新
