@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.0 (2026-08-28)
+
+### Bug Fixes
+
+- **trigger**: Replace Lock with RLock for thread-safe progress updates
+  ([`77bbd95`](https://github.com/snowflake36u/progress-reporters/commit/77bbd95a85c8f111ef18df19680f5a25417164a4))
+
+### Refactoring
+
+- Rename package from progress_reporter to progress_reporters
+  ([`bd4be82`](https://github.com/snowflake36u/progress-reporters/commit/bd4be82b989ea2829d4be270e87f4aa3cd021679))
+
+
 ## v0.2.2 (2026-08-25)
 
 ### Bug Fixes
